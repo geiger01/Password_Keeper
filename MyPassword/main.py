@@ -2,24 +2,41 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 
 def save():
     web_text=web_input.get()
     email_text=email_input.get()
     pass_text=password_input.get()
+    new_data={web_text:{
+        "email":email_text,
+        "password": pass_text
+
+    }
+}
 
     if len(pass_text)==0 or len(web_text)==0:
         messagebox.showinfo(title="Oops", message="Please make sure you haven't left any fields empty.")
         
     else:
-        is_ok=messagebox.askokcancel(title=web_text,message= f"Email: {email_text} \npassword: {pass_text}\nAdd?")
-        if is_ok:
-        
-            with open("data.txt", "a") as data:
-                data.write(f"{web_text} | {email_text} | {pass_text}\n")
-                password_input.delete(0,END)
-                web_input.delete(0,END)
+        try:
+            with open("data.json", "r") as data_file:     
+                data=json.load(data_file)
+
+        except FileNotFoundError:
+            with open('data.json', "w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+
+        else:
+            data.update(new_data)
+
+            with open("data.json","w") as data_file:
+                json.dump(data, data_file, indent=4)
+
+        finally:  
+            password_input.delete(0,END)
+            web_input.delete(0,END)
 
 def generate():
     password_input.delete(0, END)
@@ -51,6 +68,27 @@ def generate():
     password_input.insert(0,password)
     pyperclip.copy(password)
 
+def search():
+    web_text= web_input.get()
+    try:        
+        with open("data.json") as data_file:
+            data=json.load(data_file)
+
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error", message="No Data File Found")
+    
+    else:
+        
+        if web_text in data:
+            email = data[web_text]["email"]
+            password = data[web_text]["password"]
+            messagebox.showinfo(title=web_text, message=f"Email: {email}\nPassword: {password}")
+        else:   
+            messagebox.showinfo(title="Error", message=f"No details for {web_text}")
+
+
+
+
     
 
 
@@ -67,14 +105,17 @@ email_label.grid(column=0, row=2)
 password_label= Label(text="Password:")
 password_label.grid(column=0, row=3)
 
-add_button=Button(text="Add", width=32, command=save)
+add_button=Button(text="Add", width=14, command=save)
 add_button.grid(column=1, row=4, columnspan=2)
+
+search_button=Button(text="Search", width=17, command=search)
+search_button.grid(column=2, row=1, columnspan=2)
 
 gen_pass=Button(text="Generate Password", width=14, command=generate)
 gen_pass.grid(column=2, row=3)
 
-web_input = Entry(width=35)
-web_input.grid(column=1, row=1, columnspan=2)
+web_input = Entry(width=17)
+web_input.grid(column=1, row=1)
 web_input.focus()
 
 email_input = Entry(width=35)
